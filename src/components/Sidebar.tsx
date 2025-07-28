@@ -5,23 +5,25 @@ import {
   Home, 
   Video, 
   FileText, 
-  Download, 
-  Mail, 
-  CreditCard,
-  User
+  Mail,
+  User,
+  LogOut
 } from 'lucide-react';
 
 export const Sidebar: React.FC = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const location = useLocation();
 
   const menuItems = [
     { icon: Home, label: 'Home', href: '/dashboard' },
     { icon: Video, label: 'Interview Sessions', href: '/interview-sessions' },
     { icon: FileText, label: 'CVs / Resumes', href: '/resumes' },
-    { icon: Download, label: 'Download Desktop App', href: '/download' },
     { icon: Mail, label: 'Email Support', href: 'mailto:support@jyothis-ai.com', external: true },
   ];
+
+  const handleLogout = async () => {
+    await logout();
+  };
 
   return (
     <div className="flex h-screen w-64 flex-col bg-white border-r border-gray-200 shadow-sm">
@@ -77,23 +79,9 @@ export const Sidebar: React.FC = () => {
         </ul>
       </nav>
 
-      {/* Credits Section */}
-      <div className="px-4 pb-6">
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
-          <div className="flex items-center gap-2 mb-2">
-            <CreditCard className="h-5 w-5 text-blue-600" />
-            <span className="text-sm font-semibold text-gray-900">Interview Credits</span>
-          </div>
-          <p className="text-xs text-gray-600 mb-3">
-            Start a 10min free trial session or buy credits for full-length interview sessions.
-          </p>
-          <button className="w-full bg-blue-600 text-white text-sm font-medium py-2 px-4 rounded-md hover:bg-blue-700 transition-colors duration-200">
-            Get Credits
-          </button>
-        </div>
-
-        {/* User Info */}
-        <div className="mt-4 flex items-center gap-3 px-3 py-2">
+      {/* User Info */}
+      <div className="mt-4 flex flex-col gap-3 px-3 py-2">
+        <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
             <User className="h-4 w-4 text-gray-600" />
           </div>
@@ -103,6 +91,13 @@ export const Sidebar: React.FC = () => {
             </p>
           </div>
         </div>
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-3 px-3 py-2 text-red-600 rounded-lg hover:bg-red-50 hover:text-red-700 transition-colors duration-200"
+        >
+          <LogOut className="h-5 w-5" />
+          <span className="text-sm font-medium">Logout</span>
+        </button>
       </div>
     </div>
   );

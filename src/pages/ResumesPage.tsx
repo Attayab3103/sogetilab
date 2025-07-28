@@ -79,7 +79,26 @@ export const ResumesPage: React.FC = () => {
   };
 
   const handleDeleteResume = async (resumeId: string) => {
-    if (!confirm('Are you sure you want to delete this resume?')) return;
+    const confirmed = await new Promise<boolean>((resolve) => {
+      toast(`Are you sure you want to delete this resume? This action cannot be undone.`,
+        {
+          duration: Infinity,
+          action: {
+            label: 'Delete',
+            onClick: () => resolve(true),
+          },
+          cancel: {
+            label: 'Cancel',
+            onClick: () => resolve(false),
+          },
+          onDismiss: () => {
+            // If dismissed without clicking action/cancel, treat as cancel
+            resolve(false); 
+          }
+        }
+      );
+    });
+    if (!confirmed) return;
     
     try {
       await resumeAPI.delete(resumeId);

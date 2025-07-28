@@ -87,24 +87,33 @@ export default function InterviewSessions() {
   };
 
   const handleDeleteSession = async (sessionId: string, sessionName: string) => {
+    console.log(`Attempting to delete session: ${sessionId} (${sessionName})`);
     const confirmed = await new Promise<boolean>((resolve) => {
       toast(
-        <div>
-          <div className="font-semibold mb-2">Delete Session?</div>
-          <div>Are you sure you want to delete the interview session for "{sessionName}"? This action cannot be undone.</div>
-          <div className="mt-4 flex gap-2 justify-end">
-            <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => { toast.dismiss(); resolve(false); }}>Cancel</button>
-            <button className="px-3 py-1 bg-red-600 text-white rounded" onClick={() => { toast.dismiss(); resolve(true); }}>Delete</button>
-          </div>
-        </div>,
-        { duration: 10000 }
+        `Are you sure you want to delete the interview session for "${sessionName}"? This action cannot be undone.`,
+        {
+          duration: Infinity,
+          action: {
+            label: 'Delete',
+            onClick: () => resolve(true),
+          },
+          cancel: {
+            label: 'Cancel',
+            onClick: () => resolve(false),
+          },
+          onDismiss: () => {
+            // If dismissed without clicking action/cancel, treat as cancel
+            resolve(false); 
+          }
+        }
       );
     });
+    console.log(`User confirmed deletion: ${confirmed}`);
     if (!confirmed) return;
 
     try {
       setDeleting(sessionId);
-      
+      console.log(`Calling sessionAPI.delete for session: ${sessionId}`);
       // Call the delete API
       await sessionAPI.delete(sessionId);
       
@@ -133,7 +142,7 @@ export default function InterviewSessions() {
             <button className="px-3 py-1 bg-red-600 text-white rounded" onClick={() => { toast.dismiss(); resolve(true); }}>Delete</button>
           </div>
         </div>,
-        { duration: 10000, important: true }
+        { duration: 10000 }
       );
     });
     if (!confirmed) return;
@@ -428,12 +437,6 @@ export default function InterviewSessions() {
             className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
           >
             Start Trial Session
-          </button>
-          <button
-            onClick={handleStartPremiumSession}
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            Start Session
           </button>
         </div>
       </div>

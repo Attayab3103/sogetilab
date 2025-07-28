@@ -20,7 +20,9 @@ export interface Subscription {
 export interface InterviewSession {
   id: string;
   userId: string;
-  title: string;
+  sessionType: 'trial' | 'real'; // Add session type
+  company: string; // Add company
+  position: string; // Add position
   status: 'waiting' | 'active' | 'completed' | 'paused';
   startTime?: Date;
   endTime?: Date;
@@ -31,6 +33,16 @@ export interface InterviewSession {
   responses: AIResponse[];
   summary?: SessionSummary;
   creditsUsed: number;
+  metadata: SessionMetadata; // Add metadata object
+}
+
+export interface SessionMetadata {
+  resumeId?: string | null;
+  language?: string;
+  simpleEnglish?: boolean;
+  extraInstructions?: string;
+  aiModel?: string;
+  createdFromFlow?: boolean;
 }
 
 export interface TranscriptEntry {

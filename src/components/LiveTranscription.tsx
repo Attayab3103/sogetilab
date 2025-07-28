@@ -1,15 +1,11 @@
 import { useState } from "react";
-import { useSocket } from "../hooks/useSocket";
+import { Mic, PauseCircle, PlayCircle, XCircle } from "lucide-react";
 
-export default function LiveTranscription() {
-  const [transcript, setTranscript] = useState("");
-  useSocket((text) => setTranscript((prev) => prev + " " + text));
-
-  // Example: send dummy audio chunk (replace with real audio capture)
-  // sendAudioChunk(audioBuffer);
+export function LiveTranscription() {
+  const [transcript, setTranscript] = useState<string>("");
 
   return (
-    <div>
+    <div className="w-full space-y-2 p-4">
       <h2>Live Transcript</h2>
       <div>{transcript}</div>
     </div>

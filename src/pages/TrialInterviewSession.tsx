@@ -4,6 +4,7 @@ import { Mic, MicOff, Clock, Monitor } from 'lucide-react';
 import { openRouterService } from '../services/openRouterService';
 import { sessionAPI, resumeAPI } from '../services/api';
 import ReadyToCreateModal from '../components/ReadyToCreateModal';
+import { toast } from 'sonner';
 
 
 interface ConversationEntry {
@@ -150,7 +151,7 @@ export default function TrialInterviewSession() {
       // Always use latest sessionData
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SpeechRecognition) {
-        alert('Speech recognition is not supported in this browser.');
+        toast.error('Speech recognition is not supported in this browser.');
         return;
       }
       const recognition = new SpeechRecognition();
@@ -271,40 +272,14 @@ export default function TrialInterviewSession() {
     try {
       setCurrentTranscript('Loading your interview session...');
       
-      // First, try to restore from localStorage
-      const savedState = loadSessionState();
-      if (savedState && savedState.sessionData) {
-        // Merge saved state with any URL params to ensure consistency
-        const urlCompany = searchParams.get('company');
-        const urlPosition = searchParams.get('position');
-        const restoredSessionData = {
-          ...savedState.sessionData,
-          company: urlCompany || savedState.sessionData.company,
-          position: urlPosition || savedState.sessionData.position
-        };
-        setSessionData(restoredSessionData);
-        setSelectedModel(savedState.selectedModel || restoredSessionData.aiModel);
-        setConversation(savedState.conversation || []);
-        setTimeRemaining(savedState.timeRemaining || 540);
-        setSessionStartTime(savedState.sessionStartTime);
-        if (savedState.previewWidth) setPreviewWidth(savedState.previewWidth);
-        if (savedState.previewHeight) setPreviewHeight(savedState.previewHeight);
-        setIsInitialized(true);
-        const conversationCount = savedState.conversation?.length || 0;
-        setCurrentTranscript(`Session restored! Interviewing for ${restoredSessionData.position}${restoredSessionData.company ? ` for ${restoredSessionData.company}` : ''}. You have ${conversationCount} previous messages. Click "Connect" to continue...`);
-        return;
-      }
-      
-      // Get session ID from URL params or create new session
       const existingSessionId = searchParams.get('sessionId');
       
       if (existingSessionId) {
-        // Load existing session from database
+        // Load existing session from database if sessionId is provided in URL
         try {
           const response = await sessionAPI.getById(existingSessionId);
           const dbSession = response.data.data;
           
-          // Load actual resume data if available
           let resumeData = null;
           if (dbSession.metadata?.resumeId) {
             try {
@@ -325,14 +300,13 @@ export default function TrialInterviewSession() {
             aiModel: dbSession.metadata?.aiModel || 'gpt-4',
             extraInstructions: dbSession.metadata?.extraInstructions || '',
             sessionId: existingSessionId,
-            resumeData: resumeData
+            resumeData: resumeData,
           };
           
           setSessionData(sessionConfig);
           setSelectedModel(sessionConfig.aiModel);
           setSessionStartTime(new Date());
           
-          // Load conversation history from database if available
           try {
             const questionsResponse = await sessionAPI.getQuestions(existingSessionId);
             if (questionsResponse.data.data && questionsResponse.data.data.length > 0) {
@@ -341,10 +315,10 @@ export default function TrialInterviewSession() {
                 userAnswer: q.question,
                 aiResponse: {
                   answer: q.answer,
-                  confidence: q.confidence || 0.8
+                  confidence: q.confidence || 0.8,
                 },
                 timestamp: new Date(q.createdAt),
-                processed: true
+                processed: true,
               }));
               setConversation(dbConversation);
               console.log('Loaded conversation history from database:', dbConversation.length, 'messages');
@@ -353,25 +327,24 @@ export default function TrialInterviewSession() {
             console.error('Failed to load conversation history:', historyError);
           }
           
+          setCurrentTranscript(`Session loaded! Interviewing for ${dbSession.position}${dbSession.company ? ` for ${dbSession.company}` : ''}.`);
+          
         } catch (error) {
           console.error('Failed to load session from database:', error);
-          // If DB fails, show error and do not initialize session
           setCurrentTranscript('Error: Could not load session from database. Please try again.');
-          setIsInitialized(false);
         }
       } else {
-        // Create new session in database
+        // Create new session in database if no sessionId is provided
         const sessionConfig = await createNewDatabaseSession();
         setSessionData(sessionConfig);
         setSelectedModel(sessionConfig.aiModel);
         setSessionStartTime(new Date());
+        setCurrentTranscript('New session created! Ready. Click "Connect" to enable voice transcription and screen sharing...');
       }
       
       setIsInitialized(true);
-      setCurrentTranscript('Ready! Click "Connect" to enable voice transcription and screen sharing...');
       
       setTimeout(() => {
-        // Don't auto-start - let user click Connect
         console.log('Session ready for user interaction');
       }, 1000);
     } catch (error) {
@@ -1108,7 +1081,7 @@ Now respond to the interviewer's current question, keeping in mind the conversat
           setIsListening(true);
         } catch (error) {
           console.error('Screen sharing failed:', error);
-          setCurrentTranscript('Screen sharing failed. You can still use voice features.');
+          toast.error('Screen sharing failed. You can still use voice features.');
           // Start listening even if screen sharing fails
           setIsListening(true);
         }
@@ -1337,7 +1310,7 @@ Now respond to the interviewer's current question, keeping in mind the conversat
 
     } catch (error) {
       console.error('Error starting screen capture:', error);
-      setCurrentTranscript('Screen sharing was cancelled or not available. You can still use voice features by clicking "Connect" again.');
+      toast.error('Screen sharing was cancelled or not available. You can still use voice features by clicking "Connect" again.');
       // Don't throw error - let the session continue without screen sharing
     }
   };
@@ -1370,7 +1343,7 @@ Now respond to the interviewer's current question, keeping in mind the conversat
 
   const captureScreenshot = async () => {
     if (!screenStream || !videoRef.current || !canvasRef.current) {
-      alert('No screen sharing active. Please start screen sharing first.');
+      toast.error('No screen sharing active. Please start screen sharing first.');
       return;
     }
 
@@ -1378,7 +1351,7 @@ Now respond to the interviewer's current question, keeping in mind the conversat
     
     // Check if video is ready
     if (video.videoWidth === 0 || video.videoHeight === 0) {
-      alert('Video not ready yet. Please wait a moment and try again.');
+      toast.error('Video not ready yet. Please wait a moment and try again.');
       return;
     }
 
@@ -1509,9 +1482,9 @@ Analyze the screenshot and provide helpful coding interview guidance.`;
         <button
           className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
           onClick={() => {
-            setIsTrial(false);
-            setTimeRemaining(Infinity); // No timer for full session
-            setShowReadyToCreateModal(true);
+            // Ensure a new full session is created every time
+            clearSessionState(); 
+            navigate('/dashboard'); // Navigate back to dashboard to start flow for full session
           }}
         >
           Start Session
@@ -1530,8 +1503,9 @@ Analyze the screenshot and provide helpful coding interview guidance.`;
         <button
           className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
           onClick={() => {
-            setIsTrial(true);
-            setTimeRemaining(540);
+            // Ensure a new trial session is created every time
+            clearSessionState(); 
+            navigate('/interview/trial-session');
           }}
         >
           Start Trial Session

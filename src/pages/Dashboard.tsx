@@ -11,6 +11,7 @@ import PlatformSelectionModal from '../components/PlatformSelectionModal';
 import ConnectModal from '../components/ConnectModal';
 import { sessionAPI } from '../services/api';
 import styles from './Dashboard.module.css';
+import { toast } from 'sonner';
 
 interface LanguageSettings {
   language: string;
@@ -88,7 +89,6 @@ export default function Dashboard() {
       setShowConnectModal(true);
     } else {
       // Handle desktop app flow
-      import { toast } from 'sonner';
       toast('Desktop app functionality coming soon!');
     }
   };

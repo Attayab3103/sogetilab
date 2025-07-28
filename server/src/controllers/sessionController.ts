@@ -316,6 +316,44 @@ export const addQuestionToSession = async (req: Request, res: Response) => {
   }
 };
 
+// @desc    Get questions from a session
+// @route   GET /api/sessions/:id/questions
+// @access  Private
+export const getQuestions = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Not authorized',
+      });
+    }
+
+    const session = await InterviewSession.findOne({
+      _id: req.params.id,
+      userId: req.user._id,
+    });
+
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        message: 'Interview session not found',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: session.questions,
+    });
+  } catch (error: any) {
+    console.error('Get questions from session error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message,
+    });
+  }
+};
+
 // @desc    Complete session
 // @route   PUT /api/sessions/:id/complete
 // @access  Private

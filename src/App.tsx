@@ -8,6 +8,7 @@ import { CreditsPage } from './pages/CreditsPage';
 import { DownloadPage } from './pages/DownloadPage';
 import { Login } from './pages/Login';
 import { Signup } from './pages/Signup';
+import PrivateRoute from './components/PrivateRoute'; // Import the new PrivateRoute component
 
 function App() {
   return (
@@ -19,14 +20,16 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           
-          {/* Dashboard and session routes */}
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/interview-sessions" element={<InterviewSessions />} />
-          <Route path="/resumes" element={<ResumesPage />} />
-          <Route path="/credits" element={<CreditsPage />} />
-          <Route path="/download" element={<DownloadPage />} />
-          <Route path="/trial-interview" element={<TrialInterviewSession />} />
-          <Route path="/interview/trial-session" element={<TrialInterviewSession />} />
+          {/* Protected routes */}
+          <Route element={<PrivateRoute />}>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/interview-sessions" element={<InterviewSessions />} />
+            <Route path="/resumes" element={<ResumesPage />} />
+            <Route path="/credits" element={<CreditsPage />} />
+            <Route path="/download" element={<DownloadPage />} />
+            <Route path="/trial-interview" element={<TrialInterviewSession />} />
+            <Route path="/interview/trial-session" element={<TrialInterviewSession />} />
+          </Route>
         </Routes>
       </div>
     </Router>

@@ -28,7 +28,7 @@ API.interceptors.response.use(
       // Remove token and redirect to login
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      window.location.href = '/login';
+      window.location.replace('/login');
     }
     return Promise.reject(error);
   }
