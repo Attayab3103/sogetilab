@@ -25,6 +25,7 @@ interface SessionData {
   aiModel: string;
   extraInstructions?: string;
   sessionId?: string; // Add database session ID
+  sessionType: 'trial' | 'premium'; // Add sessionType property
 }
 
 interface AIResponse {
@@ -43,20 +44,9 @@ function getSessionStorageKey() {
   return 'trialInterviewSession';
 }
 
-function loadSessionState() {
-  try {
-    const data = localStorage.getItem(getSessionStorageKey());
-    if (!data) return null;
-    return JSON.parse(data);
-  } catch (error) {
-    console.error('Failed to load session state:', error);
-    return null;
-  }
-}
-
 export default function TrialInterviewSession() {
   // Core session state
-  const [isTrial, setIsTrial] = useState(true);
+  const [isTrial, setIsTrial] = useState(true); // Re-add isTrial state
   const [timeRemaining, setTimeRemaining] = useState(540); // 9 minutes for trial
   const [sessionData, setSessionData] = useState<SessionData | null>(null);
   const [selectedModel, setSelectedModel] = useState<string>('');
@@ -301,11 +291,13 @@ export default function TrialInterviewSession() {
             extraInstructions: dbSession.metadata?.extraInstructions || '',
             sessionId: existingSessionId,
             resumeData: resumeData,
+            sessionType: dbSession.sessionType, // Add sessionType property
           };
           
           setSessionData(sessionConfig);
           setSelectedModel(sessionConfig.aiModel);
           setSessionStartTime(new Date());
+          setIsTrial(dbSession.sessionType === 'trial'); // Set isTrial based on DB session type
           
           try {
             const questionsResponse = await sessionAPI.getQuestions(existingSessionId);
@@ -339,6 +331,7 @@ export default function TrialInterviewSession() {
         setSessionData(sessionConfig);
         setSelectedModel(sessionConfig.aiModel);
         setSessionStartTime(new Date());
+        setIsTrial(sessionConfig.sessionType === 'trial'); // Set isTrial based on new session type
         setCurrentTranscript('New session created! Ready. Click "Connect" to enable voice transcription and screen sharing...');
       }
       
@@ -393,7 +386,8 @@ export default function TrialInterviewSession() {
         aiModel: sessionData.aiModel,
         extraInstructions: sessionData.extraInstructions,
         sessionId: createdSession._id,
-        resumeData: resumeData
+        resumeData: resumeData,
+        sessionType: sessionData.sessionType, // Add sessionType property
       };
     } catch (error) {
       console.error('Failed to create session in database:', error);
@@ -401,8 +395,6 @@ export default function TrialInterviewSession() {
       throw error;
     }
   };
-
-
 
   // Optionally, you can still use browser speech recognition for fallback, but now you can stream transcript via WebSocket.
 
@@ -767,87 +759,6 @@ export default function TrialInterviewSession() {
 **Tone**: Professional, engaging, and appropriately detailed`;
   };
 
-  const buildComprehensiveSystemPrompt = (sessionData: SessionData, interviewerQuestion: string): string => {
-    // Build resume context
-    const resumeContext = buildResumeContext(sessionData.resumeData);
-    
-    // Build conversation history context
-    const conversationContext = buildConversationHistory();
-    
-    // Analyze question type and determine appropriate response length
-    const responseGuidance = analyzeQuestionTypeAndLength(interviewerQuestion);
-    
-    // Add contextual response adjustments based on interview stage
-    const contextualAdjustments = getContextualResponseAdjustments(interviewerQuestion, conversation.length);
-    
-    // Determine language settings
-    const languageInstruction = sessionData.language && sessionData.language !== 'en' && sessionData.language !== 'English' 
-      ? `IMPORTANT: Respond in ${sessionData.language}. The entire interview should be conducted in ${sessionData.language}.` 
-      : '';
-    
-    const simpleEnglishInstruction = sessionData.simpleEnglish 
-      ? 'COMMUNICATION STYLE: Use simple, clear, and easy-to-understand language. Avoid complex vocabulary and jargon.' 
-      : 'COMMUNICATION STYLE: Use professional, articulate language appropriate for the role level.';
-    
-    // Additional instructions from user
-    const extraInstructions = sessionData.extraInstructions 
-      ? `SPECIAL INSTRUCTIONS: ${sessionData.extraInstructions}` 
-      : '';
-
-    // Build comprehensive system prompt with conversation context
-    return `# INTERVIEW SIMULATION - YOU ARE THE JOB CANDIDATE
-
-## ROLE & CONTEXT
-You are interviewing for the position of "${sessionData.position}" at "${sessionData.company}". This is a REAL interview simulation where you must respond as the candidate being interviewed.
-
-## CURRENT INTERVIEWER'S QUESTION
-The interviewer just asked you: "${interviewerQuestion}"
-
-${responseGuidance}${contextualAdjustments}
-
-## YOUR BACKGROUND & RESUME
-${resumeContext}
-
-${conversationContext}
-
-## INTERVIEW GUIDELINES
-1. **Answer as the candidate**: You are NOT the interviewer. You are the person being interviewed.
-2. **Use your resume**: Base all answers on the experience, skills, and education provided above.
-3. **Build on conversation**: Reference previous questions/answers naturally when relevant to show continuity.
-4. **Be authentic**: Respond naturally as someone with this background would.
-5. **Stay relevant**: Keep answers focused on the current question while maintaining context.
-6. **Follow response length guidance**: Adapt your answer length based on the question type as specified above.
-7. **Show enthusiasm**: Demonstrate genuine interest in the role and company.
-8. **Maintain consistency**: Ensure your current answer aligns with previous responses.
-
-## COMMUNICATION REQUIREMENTS
-${languageInstruction}
-${simpleEnglishInstruction}
-${extraInstructions}
-
-## RESPONSE FORMAT
-- Provide a direct, natural response to the current interviewer's question
-- Reference previous discussion points naturally when relevant (e.g., "As I mentioned earlier..." or "Building on what we discussed about...")
-- Do NOT include any meta-commentary like "As a candidate..." or "Here's my response..."
-- Speak as if you're continuing the ongoing interview conversation
-- Draw from your resume experience and previous answers naturally
-- **CRITICAL**: Follow the response length guidance above precisely - the interviewer expects answers of the specified length
-- Match the energy and formality level appropriate for the question type
-- End your response at a natural stopping point without trailing off
-
-## RESPONSE QUALITY CHECKLIST
-Before responding, ensure your answer:
-✓ Directly addresses the question asked
-✓ Follows the specified length guidance (word count and timing)
-✓ Uses specific examples from your background
-✓ Demonstrates relevant skills/experience
-✓ Shows enthusiasm for the role
-✓ Connects to previous conversation naturally
-✓ Ends with confidence and clarity
-
-Now respond to the interviewer's current question, keeping in mind the conversation flow, response length requirements, and context established so far.`;
-  };
-
   const buildConversationHistory = (): string => {
     if (conversation.length === 0) {
       return '## CONVERSATION HISTORY\nThis is the start of the interview. No previous questions have been asked.';
@@ -881,7 +792,7 @@ Now respond to the interviewer's current question, keeping in mind the conversat
 
     historyContext += `**IMPORTANT:** Use this conversation history to:\n`;
     historyContext += `- Maintain consistency with previous answers\n`;
-    historyContext += `- Reference earlier topics naturally when relevant ("As I mentioned earlier..." or "Building on what we discussed...")\n`;
+    historyContext += `- Reference earlier topics naturally when relevant ("As I mentioned earlier..." or "Building on what we discussed about...")\n`;
     historyContext += `- Show you're engaged and following the interview flow\n`;
     historyContext += `- Avoid repeating the same information unless specifically asked to elaborate\n`;
     historyContext += `- Demonstrate how different aspects of your background connect\n\n`;

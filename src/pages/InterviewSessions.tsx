@@ -293,27 +293,6 @@ export default function InterviewSessions() {
     }
   };
 
-  const handleStartPremiumSession = async () => {
-    const sessionData = {
-      sessionType: 'premium' as const,
-      company: companyData?.company || 'Microsoft',
-      position: companyData?.jobDescription || 'Software Engineer',
-      resumeId: selectedResumeId,
-      language: languageSettings?.language || 'en',
-      simpleEnglish: languageSettings?.simpleEnglish || false,
-      extraInstructions: languageSettings?.extraInstructions || '',
-      aiModel: languageSettings?.aiModel || 'gpt-4',
-    };
-    try {
-      const response = await sessionAPI.create(sessionData);
-      await loadUserSessions();
-      const sessionId = response.data.data._id;
-      window.location.href = `/interview/trial-session?sessionId=${sessionId}`;
-    } catch (error) {
-      toast.error('Failed to create premium session.');
-    }
-  };
-
   // === BACK NAVIGATION HANDLERS ===
   const handleTranscriptBack = () => {
     setShowTranscriptModal(false);
