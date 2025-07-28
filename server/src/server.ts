@@ -14,12 +14,12 @@ const __dirname = path.dirname(__filename);
 dotenv.config();
 
 // Import database connection
-import connectDB from './config/database';
+import connectDB from './config/database.js';
 
 // Import routes
-import authRoutes from './routes/auth';
-import resumeRoutes from './routes/resumes';
-import sessionRoutes from './routes/sessions';
+import authRoutes from './routes/auth.js';
+import resumeRoutes from './routes/resumes.js';
+import sessionRoutes from './routes/sessions.js';
 
 // Connect to database
 connectDB();
