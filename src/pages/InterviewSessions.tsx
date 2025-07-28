@@ -449,19 +449,12 @@ export default function InterviewSessions() {
           
           <div className="bg-white rounded-lg border p-4">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-gray-500">Trial Sessions</span>
+              <span className="text-sm font-medium text-gray-500">Sessions</span>
               <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
             </div>
             <div className="text-2xl font-bold text-orange-600">{stats.trial}</div>
           </div>
-          
-          <div className="bg-white rounded-lg border p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-gray-500">Premium Sessions</span>
-              <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-            </div>
-            <div className="text-2xl font-bold text-purple-600">{stats.premium}</div>
-          </div>
+          {/* Removed Premium Sessions box */}
         </div>
       )}
 
