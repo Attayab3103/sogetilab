@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    
+    "prepare": "npm install @types/node@^24.1.0",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
@@ -15,7 +15,9 @@
     "dev:full": "concurrently \"npm run dev\" \"npm run server:dev\""
   },
   "dependencies": {
-    "@types/node": "^24.1.0",
+    "@types/express": "^4.17.21",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/cookie-parser": "^1.4.9",
     "@types/socket.io": "^3.0.1",
     "@types/socket.io-client": "^1.4.36",
     "axios": "^1.11.0",
