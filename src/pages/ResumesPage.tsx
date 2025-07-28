@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
 import { useSearchParams } from 'react-router-dom';
 import { DashboardLayout } from '../components/DashboardLayout';
 import { UploadResumeModal } from '../components/UploadResumeModal';
@@ -85,7 +86,7 @@ export const ResumesPage: React.FC = () => {
       setResumes(resumes.filter(resume => resume._id !== resumeId));
     } catch (err: any) {
       console.error('Error deleting resume:', err);
-      alert('Failed to delete resume. Please try again.');
+      toast.error('Failed to delete resume. Please try again.');
     }
   };
 
@@ -98,7 +99,7 @@ export const ResumesPage: React.FC = () => {
       })));
     } catch (err: any) {
       console.error('Error setting default resume:', err);
-      alert('Failed to set default resume. Please try again.');
+      toast.error('Failed to set default resume. Please try again.');
     }
   };
 

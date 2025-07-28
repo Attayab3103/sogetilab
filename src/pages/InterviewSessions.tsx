@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
 import { Play, Calendar, Building, User, AlertCircle, Trash2 } from 'lucide-react';
 import { DashboardLayout } from '../components/DashboardLayout';
@@ -86,10 +87,19 @@ export default function InterviewSessions() {
   };
 
   const handleDeleteSession = async (sessionId: string, sessionName: string) => {
-    const confirmed = window.confirm(
-      `Are you sure you want to delete the interview session for "${sessionName}"? This action cannot be undone.`
-    );
-    
+    const confirmed = await new Promise<boolean>((resolve) => {
+      toast(
+        <div>
+          <div className="font-semibold mb-2">Delete Session?</div>
+          <div>Are you sure you want to delete the interview session for "{sessionName}"? This action cannot be undone.</div>
+          <div className="mt-4 flex gap-2 justify-end">
+            <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => { toast.dismiss(); resolve(false); }}>Cancel</button>
+            <button className="px-3 py-1 bg-red-600 text-white rounded" onClick={() => { toast.dismiss(); resolve(true); }}>Delete</button>
+          </div>
+        </div>,
+        { duration: 10000 }
+      );
+    });
     if (!confirmed) return;
 
     try {
@@ -104,7 +114,7 @@ export default function InterviewSessions() {
       console.log('Session deleted successfully:', sessionId);
     } catch (error) {
       console.error('Failed to delete session:', error);
-      alert('Failed to delete session. Please try again.');
+      toast.error('Failed to delete session. Please try again.');
     } finally {
       setDeleting(null);
     }
@@ -113,10 +123,19 @@ export default function InterviewSessions() {
   const handleBulkDelete = async () => {
     if (selectedSessions.length === 0) return;
     
-    const confirmed = window.confirm(
-      `Are you sure you want to delete ${selectedSessions.length} selected session(s)? This action cannot be undone.`
-    );
-    
+    const confirmed = await new Promise<boolean>((resolve) => {
+      toast(
+        <div>
+          <div className="font-semibold mb-2">Delete Selected Sessions?</div>
+          <div>Are you sure you want to delete {selectedSessions.length} selected session(s)? This action cannot be undone.</div>
+          <div className="mt-4 flex gap-2 justify-end">
+            <button className="px-3 py-1 bg-gray-200 rounded" onClick={() => { toast.dismiss(); resolve(false); }}>Cancel</button>
+            <button className="px-3 py-1 bg-red-600 text-white rounded" onClick={() => { toast.dismiss(); resolve(true); }}>Delete</button>
+          </div>
+        </div>,
+        { duration: 10000, important: true }
+      );
+    });
     if (!confirmed) return;
 
     try {
@@ -130,7 +149,7 @@ export default function InterviewSessions() {
       console.log('Bulk delete completed for sessions:', selectedSessions);
     } catch (error) {
       console.error('Failed to delete sessions:', error);
-      alert('Failed to delete some sessions. Please try again.');
+      toast.error('Failed to delete some sessions. Please try again.');
     }
   };
 
@@ -195,7 +214,7 @@ export default function InterviewSessions() {
       setShowConnectModal(true);
     } else {
       // Handle desktop app flow
-      alert('Desktop app functionality coming soon!');
+      toast('Desktop app functionality coming soon!');
     }
   };
 
@@ -282,7 +301,7 @@ export default function InterviewSessions() {
       const sessionId = response.data.data._id;
       window.location.href = `/interview/trial-session?sessionId=${sessionId}`;
     } catch (error) {
-      alert('Failed to create premium session.');
+      toast.error('Failed to create premium session.');
     }
   };
 

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 import { X, Upload, ArrowLeft } from 'lucide-react';
 
 interface UploadResumeModalProps {
@@ -46,7 +47,7 @@ export const UploadResumeModal: React.FC<UploadResumeModalProps> = ({
     if (file && file.type === 'application/pdf') {
       setSelectedFile(file);
     } else {
-      alert('Please select a PDF file');
+      toast.error('Please select a PDF file');
     }
   };
 
@@ -56,7 +57,7 @@ export const UploadResumeModal: React.FC<UploadResumeModalProps> = ({
     if (file && file.type === 'application/pdf') {
       setSelectedFile(file);
     } else {
-      alert('Please drop a PDF file');
+      toast.error('Please drop a PDF file');
     }
   };
 
@@ -70,7 +71,7 @@ export const UploadResumeModal: React.FC<UploadResumeModalProps> = ({
       console.log('Upload resume:', { file: selectedFile, title });
       onUploadPDF(selectedFile.name);
     } else {
-      alert('Please select a file and enter a title');
+      toast.error('Please select a file and enter a title');
     }
   };
 

@@ -88,7 +88,8 @@ export default function Dashboard() {
       setShowConnectModal(true);
     } else {
       // Handle desktop app flow
-      alert('Desktop app functionality coming soon!');
+      import { toast } from 'sonner';
+      toast('Desktop app functionality coming soon!');
     }
   };
 

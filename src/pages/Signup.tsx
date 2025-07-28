@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Mail, Lock, User, ArrowRight } from 'lucide-react';
@@ -15,8 +16,9 @@ export const Signup: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+
     if (password !== confirmPassword) {
-      alert('Passwords do not match');
+      toast.error('Passwords do not match');
       return;
     }
 
@@ -25,9 +27,11 @@ export const Signup: React.FC = () => {
     try {
       // Mock registration - in a real app, this would call your API
       await register(email, password, name);
+      toast.success('Signup successful! Redirecting to dashboard...');
       navigate('/dashboard');
     } catch (error) {
       console.error('Signup failed:', error);
+      toast.error('Signup failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
