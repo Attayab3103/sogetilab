@@ -7,8 +7,8 @@ import {
   deleteSession,
   addQuestionToSession,
   completeSession,
-} from '../controllers/sessionController';
-import { protect } from '../middleware/auth';
+} from '../controllers/sessionController.js';
+import { protect } from '../middleware/auth.js';
 
 const router = express.Router();
 

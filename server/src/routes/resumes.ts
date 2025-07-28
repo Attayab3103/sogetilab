@@ -6,8 +6,8 @@ import {
   updateResume,
   deleteResume,
   setDefaultResume,
-} from '../controllers/resumeController';
-import { protect } from '../middleware/auth';
+} from '../controllers/resumeController.js';
+import { protect } from '../middleware/auth.js';
 
 const router = express.Router();
 

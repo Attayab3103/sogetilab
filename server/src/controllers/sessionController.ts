@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import InterviewSession from '../models/InterviewSession';
-import Resume from '../models/Resume';
+import InterviewSession from '../models/InterviewSession.js';
+import Resume from '../models/Resume.js';
 
 // @desc    Create a new interview session
 // @route   POST /api/sessions

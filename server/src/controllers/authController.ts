@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
-import User, { IUser } from '../models/User';
+import User, { IUser } from '../models/User.js';
 
 // Generate JWT Token
 const signToken = (id: string): string => {
@@ -179,7 +179,7 @@ export const logout = async (req: Request, res: Response) => {
 // @desc    Update user details
 // @route   PUT /api/auth/updatedetails
 // @access  Private
-export const updateDetails = async (req: Request, res: Response) => {
+export const updateProfile = async (req: Request, res: Response) => {
   try {
     if (!req.user) {
       return res.status(401).json({

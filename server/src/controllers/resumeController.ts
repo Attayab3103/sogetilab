@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import Resume from '../models/Resume';
+import Resume from '../models/Resume.js';
 
 // @desc    Get all resumes for logged in user
 // @route   GET /api/resumes
