@@ -38,7 +38,7 @@ app.use(cookieParser());
 if (process.env.NODE_ENV === 'production') {
   // Correctly determine the path to the frontend build directory
   // Assuming 'dist' is the build output of the frontend in the root directory
-  const frontendPath = path.join(__dirname, '../../dist');
+  const frontendPath = path.join(__dirname, '../../../dist');
   app.use(express.static(frontendPath));
 
   // For any other route, serve the index.html from the frontend build
