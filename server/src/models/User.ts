@@ -64,11 +64,10 @@ const UserSchema: Schema = new mongoose.Schema(
 );
 
 // Pre-save middleware to hash password
-UserSchema.pre('save', async function (next) {
+UserSchema.pre('save', async function (this: IUser, next) {
   if (!this.isModified('password')) return next();
-  
   const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
+  this.password = await bcrypt.hash(this.password as string, salt);
   next();
 });
 
