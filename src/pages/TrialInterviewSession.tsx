@@ -44,9 +44,25 @@ function getSessionStorageKey() {
   return 'trialInterviewSession';
 }
 
+function loadSessionState() {
+  try {
+    const data = localStorage.getItem(getSessionStorageKey());
+    if (!data) return null;
+    const parsedData = JSON.parse(data);
+    // Ensure sessionType is handled if it wasn't present in old saved state
+    if (!parsedData.sessionData && parsedData.sessionData.sessionType) {
+      parsedData.sessionData.sessionType = 'trial'; 
+    }
+    return parsedData;
+  } catch (error) {
+    console.error('Failed to load session state:', error);
+    return null;
+  }
+}
+
 export default function TrialInterviewSession() {
   // Core session state
-  const [isTrial, setIsTrial] = useState(true); // Re-add isTrial state
+  const [isTrial, setIsTrial] = useState(true); 
   const [timeRemaining, setTimeRemaining] = useState(540); // 9 minutes for trial
   const [sessionData, setSessionData] = useState<SessionData | null>(null);
   const [selectedModel, setSelectedModel] = useState<string>('');
@@ -191,6 +207,7 @@ export default function TrialInterviewSession() {
       }
       if (silenceTimer) {
         clearTimeout(silenceTimer);
+        setSilenceTimer(null);
       }
     };
   }, [isListening]);
@@ -291,13 +308,13 @@ export default function TrialInterviewSession() {
             extraInstructions: dbSession.metadata?.extraInstructions || '',
             sessionId: existingSessionId,
             resumeData: resumeData,
-            sessionType: dbSession.sessionType, // Add sessionType property
+            sessionType: dbSession.sessionType || 'trial', // Ensure sessionType is set
           };
           
           setSessionData(sessionConfig);
           setSelectedModel(sessionConfig.aiModel);
           setSessionStartTime(new Date());
-          setIsTrial(dbSession.sessionType === 'trial'); // Set isTrial based on DB session type
+          setIsTrial(sessionConfig.sessionType === 'trial'); // Set isTrial based on DB session type
           
           try {
             const questionsResponse = await sessionAPI.getQuestions(existingSessionId);
@@ -387,7 +404,7 @@ export default function TrialInterviewSession() {
         extraInstructions: sessionData.extraInstructions,
         sessionId: createdSession._id,
         resumeData: resumeData,
-        sessionType: sessionData.sessionType, // Add sessionType property
+        sessionType: sessionData.sessionType, 
       };
     } catch (error) {
       console.error('Failed to create session in database:', error);
@@ -395,6 +412,7 @@ export default function TrialInterviewSession() {
       throw error;
     }
   };
+
 
   // Optionally, you can still use browser speech recognition for fallback, but now you can stream transcript via WebSocket.
 
@@ -642,121 +660,73 @@ export default function TrialInterviewSession() {
     // Special handling for coding/technical questions
     for (const pattern of patterns.codingAnswers) {
       if (pattern.test(q)) {
-        return `## RESPONSE LENGTH GUIDANCE - TECHNICAL/CODING ANSWER
-**Target Length**: Variable based on complexity (100-400 words)
-**Structure**: This is a technical/coding question requiring systematic problem-solving.
-
-**Required Elements**:
-- **Problem Understanding**: Clarify the requirements and constraints
-- **Approach Explanation**: Outline your solution strategy before coding
-- **Step-by-Step Solution**: Write clean, commented code if applicable
-- **Complexity Analysis**: Discuss time/space complexity
-- **Edge Cases**: Consider and mention edge cases
-- **Alternative Solutions**: If time permits, mention other approaches
-- **Testing Strategy**: Briefly explain how you'd test this
-
-**Tone**: Analytical, methodical, and confident in technical abilities
-**Note**: If screen sharing is active, use the capture feature to analyze the coding problem`;
+        return `## RESPONSE LENGTH GUIDANCE - TECHNICAL/CODING ANSWER\n**Target Length**: Variable based on complexity (100-400 words)\n**Structure**: This is a technical/coding question requiring systematic problem-solving.\n\n**Required Elements**:\n- **Problem Understanding**: Clarify the requirements and constraints\n- **Approach Explanation**: Outline your solution strategy before coding\n- **Step-by-Step Solution**: Write clean, commented code if applicable\n- **Complexity Analysis**: Discuss time/space complexity\n- **Edge Cases**: Consider and mention edge cases\n- **Alternative Solutions**: If time permits, mention other approaches\n- **Testing Strategy**: Briefly explain how you'd test this\n\n**Tone**: Analytical, methodical, and confident in technical abilities\n**Note**: If screen sharing is active, use the capture feature to analyze the coding problem`;
       }
     }
 
     for (const pattern of patterns.veryLongAnswers) {
       if (pattern.test(q)) {
-        return `## RESPONSE LENGTH GUIDANCE - COMPREHENSIVE ANSWER
-**Target Length**: 300-500 words (2-3 minutes speaking time)
-**Structure**: This question requires a detailed, comprehensive response with multiple examples and thorough explanation.
-
-**Required Elements**:
-- **Detailed Introduction**: Set comprehensive context
-- **Multiple Examples**: Provide 2-3 specific, detailed examples with outcomes
-- **Process Explanation**: Walk through your methodology/approach step-by-step  
-- **Results & Impact**: Quantify achievements and explain broader implications
-- **Future Application**: Connect to the role and show forward-thinking
-- **Professional Depth**: Demonstrate expertise and strategic thinking
-
-**Tone**: Professional, confident, and comprehensive while maintaining engagement`;
+        return `## RESPONSE LENGTH GUIDANCE - COMPREHENSIVE ANSWER\n**Target Length**: 300-500 words (2-3 minutes speaking time)\n**Structure**: This question requires a detailed, comprehensive response with multiple examples and thorough explanation.\n\n**Required Elements**:\n- **Detailed Introduction**: Set comprehensive context\n- **Multiple Examples**: Provide 2-3 specific, detailed examples with outcomes\n- **Process Explanation**: Walk through your methodology/approach step-by-step  \n- **Results & Impact**: Quantify achievements and explain broader implications\n- **Future Application**: Connect to the role and show forward-thinking\n- **Professional Depth**: Demonstrate expertise and strategic thinking\n\n**Tone**: Professional, confident, and comprehensive while maintaining engagement`;
       }
     }
 
     for (const pattern of patterns.longAnswers) {
       if (pattern.test(q)) {
-        return `## RESPONSE LENGTH GUIDANCE - DETAILED ANSWER
-**Target Length**: 200-400 words (60-120 seconds speaking time)
-**Structure**: This question needs a structured, detailed response with specific examples.
-
-**Required Elements**:
-- **Clear Setup**: Provide context and background (1-2 sentences)
-- **Specific Example**: Give a detailed, relevant example from your experience
-- **Action Taken**: Explain what you did and your thought process
-- **Results Achieved**: Share measurable outcomes and impact
-- **Learning/Growth**: What you learned or how it shaped you
-- **Relevance**: Connect back to the role/company
-
-**Tone**: Professional, engaging, and story-driven with concrete details`;
+        return `## RESPONSE LENGTH GUIDANCE - DETAILED ANSWER\n**Target Length**: 200-400 words (60-120 seconds speaking time)\n**Structure**: This question needs a structured, detailed response with specific examples.\n\n**Required Elements**:\n- **Clear Setup**: Provide context and background (1-2 sentences)\n- **Specific Example**: Give a detailed, relevant example from your experience\n- **Action Taken**: Explain what you did and your thought process\n- **Results Achieved**: Share measurable outcomes and impact\n- **Learning/Growth**: What you learned or how it shaped you\n- **Relevance**: Connect back to the role/company\n\n**Tone**: Professional, engaging, and story-driven with concrete details`;
       }
     }
 
     for (const pattern of patterns.mediumAnswers) {
       if (pattern.test(q)) {
-        return `## RESPONSE LENGTH GUIDANCE - MODERATE ANSWER
-**Target Length**: 100-200 words (30-60 seconds speaking time)
-**Structure**: This question needs a focused, well-organized response.
-
-**Required Elements**:
-- **Direct Answer**: Address the question clearly upfront
-- **Supporting Example**: Provide one relevant example or evidence
-- **Brief Explanation**: Give context or reasoning (2-3 sentences)
-- **Connection**: Link to the role or demonstrate value
-- **Confident Close**: End with a strong, forward-looking statement
-
-**Tone**: Professional, concise, and confident without being rushed`;
+        return `## RESPONSE LENGTH GUIDANCE - MODERATE ANSWER\n**Target Length**: 100-200 words (30-60 seconds speaking time)\n**Structure**: This question needs a focused, well-organized response.\n\n**Required Elements**:\n- **Direct Answer**: Address the question clearly upfront\n- **Supporting Example**: Provide one relevant example or evidence\n- **Brief Explanation**: Give context or reasoning (2-3 sentences)\n- **Connection**: Link to the role or demonstrate value\n- **Confident Close**: End with a strong, forward-looking statement\n\n**Tone**: Professional, concise, and confident without being rushed`;
       }
     }
 
     for (const pattern of patterns.shortAnswers) {
       if (pattern.test(q)) {
-        return `## RESPONSE LENGTH GUIDANCE - BRIEF ANSWER
-**Target Length**: 50-100 words (15-30 seconds speaking time)
-**Structure**: This question requires a concise, direct response.
-
-**Required Elements**:
-- **Immediate Answer**: Respond directly to the question
-- **Brief Support**: Add 1-2 sentences of context or reasoning if needed
-- **Professional Tone**: Keep it warm but efficient
-- **Clear Close**: End definitively without trailing off
-
-**Tone**: Friendly, confident, and appropriately brief`;
+        return `## RESPONSE LENGTH GUIDANCE - BRIEF ANSWER\n**Target Length**: 50-100 words (15-30 seconds speaking time)\n**Structure**: This question requires a concise, direct response.\n\n**Required Elements**:\n- **Immediate Answer**: Respond directly to the question\n- **Brief Support**: Add 1-2 sentences of context or reasoning if needed\n- **Professional Tone**: Keep it warm but efficient\n- **Clear Close**: End definitively without trailing off\n\n**Tone**: Friendly, confident, and appropriately brief`;
       }
     }
 
     // Follow-up and probing questions should be shorter
     if (q.includes('follow up') || q.includes('can you elaborate') || q.includes('tell me more') || 
         q.includes('what else') || q.includes('anything else') || q.includes('expand on')) {
-      return `## RESPONSE LENGTH GUIDANCE - FOLLOW-UP ANSWER
-**Target Length**: 75-150 words (30-45 seconds speaking time)
-**Structure**: This is a follow-up question - build on your previous answer.
-
-**Required Elements**:
-- **Reference Previous**: Acknowledge your previous response
-- **Additional Detail**: Provide the specific elaboration requested
-- **New Insight**: Add something valuable you didn't mention before
-- **Natural Conclusion**: End without being repetitive
-
-**Tone**: Engaging and additive - show you have more depth to offer`;
+      return `## RESPONSE LENGTH GUIDANCE - FOLLOW-UP ANSWER\n**Target Length**: 75-150 words (30-45 seconds speaking time)\n**Structure**: This is a follow-up question - build on your previous answer.\n\n**Required Elements**:\n- **Reference Previous**: Acknowledge your previous response\n- **Additional Detail**: Provide the specific elaboration requested\n- **New Insight**: Add something valuable you didn't mention before\n- **Natural Conclusion**: End without being repetitive\n\n**Tone**: Engaging and additive - show you have more depth to offer`;
     }
 
     // Default to medium length for unclassified questions
-    return `## RESPONSE LENGTH GUIDANCE - STANDARD ANSWER
-**Target Length**: 150-250 words (45-75 seconds speaking time)
-**Structure**: This question needs a balanced, professional response.
+    return `## RESPONSE LENGTH GUIDANCE - STANDARD ANSWER\n**Target Length**: 150-250 words (45-75 seconds speaking time)\n**Structure**: This question needs a balanced, professional response.\n\n**Required Elements**:\n- **Clear Opening**: Address the question directly\n- **Supporting Details**: Provide relevant context and examples\n- **Professional Insight**: Show your thinking and expertise\n- **Strong Conclusion**: End with confidence and relevance to the role\n\n**Tone**: Professional, engaging, and appropriately detailed`;
+  };
 
-**Required Elements**:
-- **Clear Opening**: Address the question directly
-- **Supporting Details**: Provide relevant context and examples
-- **Professional Insight**: Show your thinking and expertise
-- **Strong Conclusion**: End with confidence and relevance to the role
+  const buildComprehensiveSystemPrompt = (sessionData: SessionData, interviewerQuestion: string): string => {
+    // Build resume context
+    const resumeContext = buildResumeContext(sessionData.resumeData);
+    
+    // Build conversation history context
+    const conversationContext = buildConversationHistory();
+    
+    // Analyze question type and determine appropriate response length
+    const responseGuidance = analyzeQuestionTypeAndLength(interviewerQuestion);
+    
+    // Add contextual response adjustments based on interview stage
+    const contextualAdjustments = getContextualResponseAdjustments(interviewerQuestion, conversation.length);
+    
+    // Determine language settings
+    const languageInstruction = sessionData.language && sessionData.language !== 'en' && sessionData.language !== 'English' 
+      ? `IMPORTANT: Respond in ${sessionData.language}. The entire interview should be conducted in ${sessionData.language}.` 
+      : '';
+    
+    const simpleEnglishInstruction = sessionData.simpleEnglish 
+      ? 'COMMUNICATION STYLE: Use simple, clear, and easy-to-understand language. Avoid complex vocabulary and jargon.' 
+      : 'COMMUNICATION STYLE: Use professional, articulate language appropriate for the role level.';
+    
+    // Additional instructions from user
+    const extraInstructions = sessionData.extraInstructions 
+      ? `SPECIAL INSTRUCTIONS: ${sessionData.extraInstructions}` 
+      : '';
 
-**Tone**: Professional, engaging, and appropriately detailed`;
+    // Build comprehensive system prompt with conversation context
+    return `# INTERVIEW SIMULATION - YOU ARE THE JOB CANDIDATE\n\n## ROLE & CONTEXT\nYou are interviewing for the position of "${sessionData.position}" at "${sessionData.company}". This is a REAL interview simulation where you must respond as the candidate being interviewed.\n\n## CURRENT INTERVIEWER'S QUESTION\nThe interviewer just asked you: "${interviewerQuestion}"\n\n${responseGuidance}${contextualAdjustments}\n\n## YOUR BACKGROUND & RESUME\n${resumeContext}\n\n${conversationContext}\n\n## INTERVIEW GUIDELINES\n1. **Answer as the candidate**: You are NOT the interviewer. You are the person being interviewed.\n2. **Use your resume**: Base all answers on the experience, skills, and education provided above.\n3. **Build on conversation**: Reference previous questions/answers naturally when relevant to show continuity.\n4. **Be authentic**: Respond naturally as someone with this background would.\n5. **Stay relevant**: Keep answers focused on the current question while maintaining context.\n6. **Follow response length guidance**: Adapt your answer length based on the question type as specified above.\n7. **Show enthusiasm**: Demonstrate genuine interest in the role and company.\n8. **Maintain consistency**: Ensure your current answer aligns with previous responses.\n\n## COMMUNICATION REQUIREMENTS\n${languageInstruction}\n${simpleEnglishInstruction}\n${extraInstructions}\n\n## RESPONSE FORMAT\n- Provide a direct, natural response to the current interviewer's question\n- Reference previous discussion points naturally when relevant (e.g., "As I mentioned earlier..." or "Building on what we discussed about...")\n- Do NOT include any meta-commentary like "As a candidate..." or "Here's my response..."\n- Speak as if you're continuing the ongoing interview conversation\n- Draw from your resume experience and previous answers naturally\n- **CRITICAL**: Follow the response length guidance above precisely - the interviewer expects answers of the specified length\n- Match the energy and formality level appropriate for the question type\n- End your response at a natural stopping point without trailing off\n\n## RESPONSE QUALITY CHECKLIST\nBefore responding, ensure your answer:\n✓ Directly addresses the question asked\n✓ Follows the specified length guidance (word count and timing)\n✓ Uses specific examples from your background\n✓ Demonstrates relevant skills/experience\n✓ Shows enthusiasm for the role\n✓ Connects to previous conversation naturally\n✓ Ends with confidence and clarity\n\nNow respond to the interviewer's current question, keeping in mind the conversation flow, response length requirements, and context established so far.`;
   };
 
   const buildConversationHistory = (): string => {
@@ -1348,31 +1318,7 @@ export default function TrialInterviewSession() {
   };
 
   const buildScreenAnalysisPrompt = (sessionData: SessionData, _screenshot: string): string => {
-    return `# CODING INTERVIEW SCREEN ANALYSIS
-
-You are analyzing a screenshot from a coding interview screen share. The candidate is interviewing for "${sessionData.position}" at "${sessionData.company}".
-
-## ANALYSIS TASK
-1. **Identify the Problem**: Look for coding problems, algorithm challenges, or technical questions on the screen
-2. **Understand Context**: Determine if this is from LeetCode, HackerRank, IDE, whiteboard, or other platform
-3. **Provide Guidance**: Give step-by-step approach and solution hints
-
-## YOUR RESPONSE SHOULD INCLUDE:
-- **Problem Identification**: What coding problem or question is visible?
-- **Solution Approach**: High-level strategy to solve this problem
-- **Key Concepts**: Important algorithms, data structures, or patterns needed
-- **Implementation Tips**: Specific coding guidance or pseudocode
-- **Time/Space Complexity**: Expected complexity analysis
-- **Edge Cases**: Important test cases to consider
-
-## GUIDELINES:
-- Be concise but comprehensive
-- Focus on approach rather than complete solution
-- Help the candidate think through the problem systematically
-- Consider the interview context and role level
-- If no clear problem is visible, describe what you can see and suggest next steps
-
-Analyze the screenshot and provide helpful coding interview guidance.`;
+    return `# CODING INTERVIEW SCREEN ANALYSIS\n\nYou are analyzing a screenshot from a coding interview screen share. The candidate is interviewing for "${sessionData.position}" at "${sessionData.company}".\n\n## ANALYSIS TASK\n1. **Identify the Problem**: Look for coding problems, algorithm challenges, or technical questions on the screen\n2. **Understand Context**: Determine if this is from LeetCode, HackerRank, IDE, whiteboard, or other platform\n3. **Provide Guidance**: Give step-by-step approach and solution hints\n\n## YOUR RESPONSE SHOULD INCLUDE:\n- **Problem Identification**: What coding problem or question is visible?\n- **Solution Approach**: High-level strategy to solve this problem\n- **Key Concepts**: Important algorithms, data structures, or patterns needed\n- **Implementation Tips**: Specific coding guidance or pseudocode\n- **Time/Space Complexity**: Expected complexity analysis\n- **Edge Cases**: Important test cases to consider\n\n## GUIDELINES:\n- Be concise but comprehensive\n- Focus on approach rather than complete solution\n- Help the candidate think through the problem systematically\n- Consider the interview context and role level\n- If no clear problem is visible, describe what you can see and suggest next steps\n\nAnalyze the screenshot and provide helpful coding interview guidance.`;
   };
 
   if (!isInitialized) {
