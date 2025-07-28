@@ -122,12 +122,25 @@ export default function TrialInterviewSession() {
   };
 
   // Initialize session with data from URL params or use defaults
+  // Initialize session with data from URL params or use defaults
   useEffect(() => {
     if (!isInitialized) {
-      initializeSession();
+      const savedState = loadSessionState();
+      if (savedState) {
+        setSessionData(savedState.sessionData);
+        setSelectedModel(savedState.selectedModel);
+        setConversation(savedState.conversation);
+        setTimeRemaining(savedState.timeRemaining);
+        setSessionStartTime(savedState.sessionStartTime ? new Date(savedState.sessionStartTime) : null);
+        setPreviewWidth(savedState.previewWidth);
+        setPreviewHeight(savedState.previewHeight);
+        setIsInitialized(true); // Mark as initialized if state is loaded
+        setCurrentTranscript('Session restored! Ready. Click "Connect" to enable voice transcription and screen sharing...');
+      } else {
+        initializeSession();
+      }
     }
   }, []);
-
   // Auto-save session state when conversation or important state changes
   useEffect(() => {
     if (isInitialized && sessionData) {
