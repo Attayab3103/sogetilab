@@ -4,7 +4,7 @@
   "description": "Backend for InterviewAI application",
   "main": "dist/server.js",
   "scripts": {
-    "build": "tsc",
+    "build": "npx tsc",
     "start": "node dist/server.js",
     "dev": "tsx watch src/server.ts"
   },
