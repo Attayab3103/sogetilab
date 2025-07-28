@@ -5,7 +5,6 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import http from 'http';
-import { setupWebSocket } from './websocket';
 
 // ES module equivalent of __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -83,7 +82,7 @@ app.use('*', (req, res) => {
 
 
 // --- WebSocket setup ---
-setupWebSocket(app, server);
+// setupWebSocket(app, server);
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
