@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Mic, MicOff, Clock, Monitor } from 'lucide-react';
 import { openRouterService } from '../services/openRouterService';
-import { sessionAPI, resumeAPI } from '../services/api';
+import { sessionAPI } from '../services/api';
 import ReadyToCreateModal from '../components/ReadyToCreateModal';
 import { toast } from 'sonner';
 
@@ -125,20 +125,10 @@ export default function TrialInterviewSession() {
   // Initialize session with data from URL params or use defaults
   useEffect(() => {
     if (!isInitialized) {
-      const savedState = loadSessionState();
-      if (savedState) {
-        setSessionData(savedState.sessionData);
-        setSelectedModel(savedState.selectedModel);
-        setConversation(savedState.conversation);
-        setTimeRemaining(savedState.timeRemaining);
-        setSessionStartTime(savedState.sessionStartTime ? new Date(savedState.sessionStartTime) : null);
-        setPreviewWidth(savedState.previewWidth);
-        setPreviewHeight(savedState.previewHeight);
-        setIsInitialized(true); // Mark as initialized if state is loaded
-        setCurrentTranscript('Session restored! Ready. Click "Connect" to enable voice transcription and screen sharing...');
-      } else {
-        initializeSession();
-      }
+      // Always start with empty conversation and new session
+      setConversation([]);
+      setIsInitialized(true);
+      initializeSession();
     }
   }, []);
   // Auto-save session state when conversation or important state changes
@@ -288,142 +278,31 @@ export default function TrialInterviewSession() {
     };
   }, [isInitialized, sessionData]);
 
-  const initializeSession = async () => {
-    try {
-      setCurrentTranscript('Loading your interview session...');
-      
-      const existingSessionId = searchParams.get('sessionId');
-      
-      if (existingSessionId) {
-        // Load existing session from database if sessionId is provided in URL
-        try {
-          const response = await sessionAPI.getById(existingSessionId);
-          const dbSession = response.data.data;
-          
-          let resumeData = null;
-          if (dbSession.metadata?.resumeId) {
-            try {
-              const resumeResponse = await resumeAPI.getById(dbSession.metadata.resumeId);
-              resumeData = resumeResponse.data.data;
-            } catch (resumeError) {
-              console.error('Failed to load resume for existing session:', resumeError);
-              resumeData = null;
-            }
-          }
-          
-          const sessionConfig: SessionData = {
-            company: dbSession.company,
-            position: dbSession.position,
-            resumeId: dbSession.metadata?.resumeId || 'demo-resume',
-            language: dbSession.metadata?.language || 'en',
-            simpleEnglish: dbSession.metadata?.simpleEnglish || false,
-            aiModel: dbSession.metadata?.aiModel || 'gpt-4',
-            extraInstructions: dbSession.metadata?.extraInstructions || '',
-            sessionId: existingSessionId,
-            resumeData: resumeData,
-            sessionType: dbSession.sessionType || 'trial', // Ensure sessionType is set
-          };
-          
-          setSessionData(sessionConfig);
-          setSelectedModel(sessionConfig.aiModel);
-          setSessionStartTime(new Date());
-          setIsTrial(sessionConfig.sessionType === 'trial'); // Set isTrial based on DB session type
-          
-          try {
-            const questionsResponse = await sessionAPI.getQuestions(existingSessionId);
-            if (questionsResponse.data.data && questionsResponse.data.data.length > 0) {
-              const dbConversation = questionsResponse.data.data.map((q: any) => ({
-                question: q.question,
-                userAnswer: q.question,
-                aiResponse: {
-                  answer: q.answer,
-                  confidence: q.confidence || 0.8,
-                },
-                timestamp: new Date(q.createdAt),
-                processed: true,
-              }));
-              setConversation(dbConversation);
-              console.log('Loaded conversation history from database:', dbConversation.length, 'messages');
-            }
-          } catch (historyError) {
-            console.error('Failed to load conversation history:', historyError);
-          }
-          
-          setCurrentTranscript(`Session loaded! Interviewing for ${dbSession.position}${dbSession.company ? ` for ${dbSession.company}` : ''}.`);
-          
-        } catch (error) {
-          console.error('Failed to load session from database:', error);
-          setCurrentTranscript('Error: Could not load session from database. Please try again.');
-        }
-      } else {
-        // Create new session in database if no sessionId is provided
-        const sessionConfig = await createNewDatabaseSession();
-        setSessionData(sessionConfig);
-        setSelectedModel(sessionConfig.aiModel);
-        setSessionStartTime(new Date());
-        setIsTrial(sessionConfig.sessionType === 'trial'); // Set isTrial based on new session type
-        setCurrentTranscript('New session created! Ready. Click "Connect" to enable voice transcription and screen sharing...');
-      }
-      
-      setIsInitialized(true);
-      
-      setTimeout(() => {
-        console.log('Session ready for user interaction');
-      }, 1000);
-    } catch (error) {
-      console.error('Session initialization error:', error);
-      setCurrentTranscript('Error: Could not initialize session');
-      setIsInitialized(true);
-    }
-  };
-
-  const createNewDatabaseSession = async (): Promise<SessionData> => {
-    try {
-      const sessionData = {
-        sessionType: 'trial' as const,
-        company: searchParams.get('company') || '',
-        position: searchParams.get('position') || '',
-        resumeId: searchParams.get('resumeId') || '',
-        language: searchParams.get('language') || 'en',
-        simpleEnglish: searchParams.get('simpleEnglish') === 'true',
-        extraInstructions: searchParams.get('extraInstructions') || '',
-        aiModel: searchParams.get('aiModel') || 'gpt-4'
-      };
-
-      console.log('Creating new session with data:', sessionData);
-
-      const response = await sessionAPI.create(sessionData);
-      const createdSession = response.data.data;
-
-      // Load actual resume data if resumeId is provided
-      let resumeData = null;
-      if (sessionData.resumeId) {
-        try {
-          const resumeResponse = await resumeAPI.getById(sessionData.resumeId);
-          resumeData = resumeResponse.data.data;
-        } catch (resumeError) {
-          console.error('Failed to load resume:', resumeError);
-          resumeData = null;
-        }
-      }
-
-      return {
-        company: sessionData.company,
-        position: sessionData.position,
-        resumeId: sessionData.resumeId,
-        language: sessionData.language,
-        simpleEnglish: sessionData.simpleEnglish,
-        aiModel: sessionData.aiModel,
-        extraInstructions: sessionData.extraInstructions,
-        sessionId: createdSession._id,
-        resumeData: resumeData,
-        sessionType: sessionData.sessionType, 
-      };
-    } catch (error) {
-      console.error('Failed to create session in database:', error);
-      // If DB fails, throw error
-      throw error;
-    }
+  // Refactored: Only use local state and URL params for session initialization
+  const initializeSession = () => {
+    setCurrentTranscript('Loading your interview session...');
+    // Get session config from URL params or defaults
+    const sessionConfig: SessionData = {
+      company: searchParams.get('company') || '',
+      position: searchParams.get('position') || '',
+      resumeId: searchParams.get('resumeId') || '',
+      language: searchParams.get('language') || 'en',
+      simpleEnglish: searchParams.get('simpleEnglish') === 'true',
+      aiModel: searchParams.get('aiModel') || 'gpt-4',
+      extraInstructions: searchParams.get('extraInstructions') || '',
+      sessionId: '',
+      resumeData: null,
+      sessionType: 'trial',
+    };
+    setSessionData(sessionConfig);
+    setSelectedModel(sessionConfig.aiModel);
+    setSessionStartTime(new Date());
+    setIsTrial(sessionConfig.sessionType === 'trial');
+    setCurrentTranscript('Session ready! Click "Connect" to enable voice transcription and screen sharing...');
+    setIsInitialized(true);
+    setTimeout(() => {
+      console.log('Session ready for user interaction');
+    }, 1000);
   };
 
 
@@ -1347,40 +1226,6 @@ export default function TrialInterviewSession() {
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      {/* Start Session Buttons */}
-      <div className="flex justify-center items-center py-6 gap-4">
-        <button
-          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          onClick={() => {
-            // Ensure a new full session is created every time
-            clearSessionState(); 
-            navigate('/dashboard'); // Navigate back to dashboard to start flow for full session
-          }}
-        >
-          Start Session
-        </button>
-      {/* ReadyToCreateModal for full session */}
-      <ReadyToCreateModal
-        isOpen={showReadyToCreateModal}
-        onClose={() => setShowReadyToCreateModal(false)}
-        onBack={() => setShowReadyToCreateModal(false)}
-        onNext={() => {
-          setShowReadyToCreateModal(false);
-          // Place logic to actually start the session here if needed
-        }}
-        isTrial={false}
-      />
-        <button
-          className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
-          onClick={() => {
-            // Ensure a new trial session is created every time
-            clearSessionState(); 
-            navigate('/interview/trial-session');
-          }}
-        >
-          Start Trial Session
-        </button>
-      </div>
       {/* Hidden canvas for screenshot capture */}
       <canvas ref={canvasRef} style={{ display: 'none' }} />
       
